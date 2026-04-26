@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Black Mobile Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@600&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg: #000000;
+            --card-bg: #080808;
+            --border: #1a1a1a;
+            --accent: #ffffff;
+            --text-dim: #555555;
+            --danger: #ff4444;
+            --font: 'DM Sans', sans-serif;
+            --ls: -0.47px;
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        
+        body {
+            font-family: var(--font);
+            background-color: var(--bg);
+            color: #fff;
+            margin: 0;
+            padding: env(safe-area-inset-top) 15px 40px 15px;
+            letter-spacing: var(--ls);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container { width: 100%; max-width: 1000px; }
+
+        /* Навигация (адаптивная) */
+        nav {
+            display: flex;
+            gap: 5px;
+            margin: 20px 0;
+            background: var(--card-bg);
+            padding: 4px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            width: 100%;
+        }
+
+        .nav-btn {
+            flex: 1;
+            background: transparent;
+            color: var(--text-dim);
+            border: none;
+            padding: 12px;
+            border-radius: 9px;
+            cursor: pointer;
+            font-family: var(--font);
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: 0.3s;
+        }
+
+        .nav-btn.active { background: var(--accent); color: var(--bg); }
+
+        header { margin-bottom: 20px; text-align: left; width: 100%; }
+        h1 { font-size: 1.3rem; text-transform: uppercase; letter-spacing: 1px; margin: 0; }
+
+        .section { display: none; animation: fadeIn 0.3s ease; }
+        .section.active { display: block; }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        /* Таблица с прокруткой для мобилок */
+        .table-wrapper {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            overflow-x: auto; /* Важно для мобилок */
+            margin-bottom: 30px;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        table { width: 100%; border-collapse: collapse; min-width: 500px; }
+        th { color: var(--text-dim); font-size: 0.65rem; padding: 15px 10px; text-transform: uppercase; border-bottom: 1px solid var(--border); }
+        td { border-bottom: 1px solid var(--border); padding: 10px; }
+
+        .task-input {
+            background: transparent; border: none; outline: none;
+            color: #fff; font-family: var(--font); font-weight: 600;
+            font-size: 0.95rem; width: 100%; letter-spacing: var(--ls);
+        }
+
+        /* Чекбоксы (крупнее для пальцев) */
+        .cb { display: block; position: relative; cursor: pointer; width: 22px; height: 22px; margin: 0 auto; }
+        .cb input { opacity: 0; width: 0; height: 0; }
+        .checkmark {
+            position: absolute; top: 0; left: 0; height: 22px; width: 22px; background: #000;
+            border: 2px solid #222; border-radius: 6px;
+        }
+        .cb input:checked ~ .checkmark { background: #fff; border-color: #fff; }
+
+        /* Статистика: в 2 колонки на мобилках */
+        .stats-grid { 
+            display: grid; 
+            grid-template-columns: repeat(2, 1fr); 
+            gap: 12px; 
+        }
+
+        @media (min-width: 600px) {
+            .stats-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+            nav { width: fit-content; }
+        }
+
+        .stat-card {
+            background: var(--card-bg); border: 1px solid var(--border); border-radius: 16px;
+            padding: 15px; display: flex; flex-direction: column; align-items: center;
+        }
+
+        .progress-ring { transform: rotate(-90deg); }
+        .progress-ring__circle { stroke: #111; stroke-width: 4; fill: transparent; }
+        .progress-ring__bar {
+            stroke: #fff; stroke-width: 4; fill: transparent;
+            stroke-dasharray: 125.6; transition: stroke-dashoffset 0.4s ease; stroke-linecap: round;
+        }
+
+        .percentage { position: absolute; font-size: 0.7rem; margin-top: 18px; font-weight: 600; }
+        .stat-label { margin-top: 10px; font-size: 0.7rem; color: var(--text-dim); text-align: center; }
+
+        .btn-add {
+            background: #fff; color: #000; border: none; padding: 14px; border-radius: 12px;
+            font-family: var(--font); font-weight: 600; font-size: 0.9rem; cursor: pointer; 
+            margin-top: 15px; width: 100%;
+        }
+
+        .btn-delete { background: transparent; color: #444; border: none; font-size: 1.4rem; padding: 5px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <nav>
+        <button class="nav-btn active" onclick="switchTab('planner')">Planner</button>
+        <button class="nav-btn" onclick="switchTab('workout')">Workouts</button>
+    </nav>
+
+    <div id="planner" class="section active">
+        <header><h1>Objectives</h1></header>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr><th style="width: 40px;"></th><th style="text-align: left;">Task</th><th>M</th><th>T</th><th>W</th><th>T</th><th>F</th><th>S</th><th>S</th></tr>
+                </thead>
+                <tbody id="planner-body"></tbody>
+            </table>
+        </div>
+        <div class="stats-grid" id="planner-stats"></div>
+        <button class="btn-add" onclick="addRow('planner')">+ New Task</button>
+    </div>
+
+    <div id="workout" class="section">
+        <header><h1>Training</h1></header>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr><th style="width: 40px;"></th><th style="text-align: left;">Ex</th><th>M</th><th>T</th><th>W</th><th>T</th><th>F</th><th>S</th><th>S</th></tr>
+                </thead>
+                <tbody id="workout-body"></tbody>
+            </table>
+        </div>
+        <div class="stats-grid" id="workout-stats"></div>
+        <button class="btn-add" onclick="addRow('workout')">+ New Exercise</button>
+    </div>
+</div>
+
+<script>
+    const CIRCUMFERENCE = 125.6;
+
+    function switchTab(tabId) {
+        document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+        document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById(tabId).classList.add('active');
+        event.currentTarget.classList.add('active');
+        window.scrollTo(0, 0);
+    }
+
+    function createRow(type, taskText = '', checks = Array(7).fill(false)) {
+        const tbody = document.getElementById(`${type}-body`);
+        const tr = document.createElement('tr');
+        
+        let html = `
+            <td><button class="btn-delete" onclick="removeRow(this, '${type}')">×</button></td>
+            <td><input type="text" class="task-input" value="${taskText}" placeholder="Task..." oninput="updateStats('${type}')"></td>
+        `;
+        
+        checks.forEach((checked) => {
+            html += `<td><label class="cb"><input type="checkbox" ${checked ? 'checked' : ''} onchange="updateStats('${type}')"><span class="checkmark"></span></label></td>`;
+        });
+        
+        tr.innerHTML = html;
+        tbody.appendChild(tr);
+        updateStats(type);
+    }
+
+    function addRow(type) { createRow(type); }
+
+    function removeRow(btn, type) {
+        if(confirm('Удалить задачу?')) {
+            btn.closest('tr').remove();
+            updateStats(type);
+        }
+    }
+
+    function updateStats(type) {
+        const rows = document.querySelectorAll(`#${type}-body tr`);
+        const statsGrid = document.getElementById(`${type}-stats`);
+        statsGrid.innerHTML = '';
+        const data = [];
+
+        rows.forEach(tr => {
+            const label = tr.querySelector('.task-input').value || '...';
+            const checkboxes = tr.querySelectorAll('input[type="checkbox"]');
+            const checkedCount = Array.from(checkboxes).filter(c => c.checked).length;
+            const percent = Math.round((checkedCount / 7) * 100);
+            
+            data.push({ label, checks: Array.from(checkboxes).map(c => c.checked) });
+
+            const offset = CIRCUMFERENCE - (percent / 100) * CIRCUMFERENCE;
+            const statCard = document.createElement('div');
+            statCard.className = 'stat-card';
+            statCard.innerHTML = `
+                <div style="position: relative; display: flex; justify-content: center; align-items: center;">
+                    <svg class="progress-ring" width="50" height="50">
+                        <circle class="progress-ring__circle" cx="25" cy="25" r="20"></circle>
+                        <circle class="progress-ring__bar" cx="25" cy="25" r="20" style="stroke-dashoffset: ${offset}"></circle>
+                    </svg>
+                    <div class="percentage">${percent}%</div>
+                </div>
+                <div class="stat-label">${label}</div>
+            `;
+            statsGrid.appendChild(statCard);
+        });
+        localStorage.setItem(`${type}Data`, JSON.stringify(data));
+    }
+
+    function loadData(type, defaultItems) {
+        const saved = JSON.parse(localStorage.getItem(`${type}Data`));
+        if (saved && saved.length > 0) {
+            saved.forEach(item => createRow(item.label, item.checks));
+        } else {
+            defaultItems.forEach(item => createRow(type, item.name, item.checks));
+        }
+    }
+
+    loadData('planner', [{name: 'Main Work', checks: [true,true,false,false,false,false,false]}]);
+    loadData('workout', [{name: 'Pull-ups', checks: [false,true,false,true,false,false,false]}]);
+</script>
+
+</body>
+</html>
